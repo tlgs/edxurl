@@ -39,14 +39,11 @@ func main() {
 	email := flag.String("email", "", "edX account email (*required)")
 	password := flag.String("password", "", "edX account password (*required)")
 	course_key := flag.String("course", "", "edX course key (*required)")
-
 	flag.Parse()
 
 	if *email == "" || *password == "" || *course_key == "" {
-		fmt.Println("Usage:")
-		flag.PrintDefaults()
-		fmt.Println()
-		os.Exit(1)
+		flag.Usage()
+		os.Exit(2)
 	}
 
 	// step 0: setup HTTP client
@@ -62,7 +59,7 @@ func main() {
 	req, _ := http.NewRequest("GET", loginEndpoint, nil)
 	req.Header.Add("User-Agent", "edxurl/"+version)
 
-	resp, _ := client.Do(req)
+	_, _ = client.Do(req)
 
 	u, _ := url.Parse(baseURL)
 	CSRFToken, err := retrieveCSRFToken(jar.Cookies(u))
@@ -82,7 +79,7 @@ func main() {
 	req.Header.Add("Referer", baseURL+"/login")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
 
-	resp, _ = client.Do(req)
+	resp, _ := client.Do(req)
 	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
@@ -95,8 +92,7 @@ func main() {
 	_ = json.Unmarshal(body, &result)
 
 	if !result.Success {
-		log.Println("could not authenticate")
-		log.Fatalln(result)
+		log.Fatalln("authentication failure:", result)
 	}
 	log.Println("authentication successful")
 
@@ -110,7 +106,7 @@ func main() {
 
 	fmt.Printf("%s\n", body)
 
-	// Alas, this is where the journey ends...
+	// alas, this is where the journey ends...
 	// apparently edX has multiple block types - from the Open edX API docs:
 	// > type: (str) The type of block. Possible values the names of any
 	// >     XBlock type in the system, including custom blocks. Examples are
